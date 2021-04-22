@@ -1,6 +1,6 @@
 <script>
 	import { onMount, onDestroy } from 'svelte'
-
+	import { amp, browser, dev, prerendering } from '$app/env'
 	import { goto, prefetch, prefetchRoutes } from '$app/navigation'
 	import { navigating, page, session } from '$app/stores'
 
@@ -18,6 +18,7 @@
 		if (idx != -1) store.index( idx )
 		if (res.success) inited = true
 		if (res.error) error = res.error
+		wsPoll()
 	})
 
 	// create button and keys config
@@ -99,7 +100,51 @@
 	const keydown = e => trigger( e, 1 )
 	const keyup = e => trigger( e, 0 )
 
+	let ws
 
+	function wsPoll() {
+		if (!ws) {
+			wsConnect()
+		} else if (ws.readyState == ws.CLOSED) {
+			console.log('[overview.svelte] 👁 🛑  remove CLOSED websocket...');
+			ws = null
+			window.websocketsClient = null
+		}
+		setTimeout( wsPoll, 2000)
+	}
+	function wsConnect() {
+		if (browser && !ws) {
+			const url = `ws://${window.location.hostname}:8765`
+			console.log('[overview.svelte] 👁 ⚡️  opening websocket...', url)
+			ws = new WebSocket(url);
+			ws.addEventListener('open', onOpen)
+			ws.addEventListener('message', onMessage)
+			ws.addEventListener('error', onError)
+			ws.addEventListener('close', onClose)
+			window.websocketsClient = ws;
+		}
+	}
+	function onOpen(e) {
+		console.log('[overview.svelte] 👁 ✅  opened websocket...', e.currentTarget.url);
+	}
+	function onError(err) {
+		console.log('[overview.svelte] 👁 ❌  error with websocket...', err);
+		ws.close()
+	}
+	function onClose(err) {
+		console.log('[overview.svelte] 👁 🛑  closed and delete websockets...');
+	}
+	function onMessage(e) {
+		console.log('[overview.svelte] 👁 ✨  received websocket message...', e.data);
+	}
+	// ---------------------
+	onDestroy( async() => {
+		if (browser && ws) {
+			console.log('[overview.svelte] 👁 🛑  closing websocket...')
+			ws.close()
+			window.websocketsClient = null;
+		}
+	});
 
 
 </script>
