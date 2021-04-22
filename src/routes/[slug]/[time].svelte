@@ -80,10 +80,29 @@
 		if (arr) arr.push( o )
 	}
 
+	let lastVol
+
+	async function saveVolume() {
+		if (volume != lastVol) {
+
+			const response = await fetch( '/volume.txt', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: {volume} && JSON.stringify( { volume } )
+			})
+
+			console.log('????', await response.json())
+			lastVol = volume
+		}
+	}
+
 	add( 'voldown', voldown, ['-', '_'], async b => {
 		if (b) {
 			volume -= 0.05
 			if (volume < 0) volume = 0
+			saveVolume()
 		}
 	}, volumes)
 
@@ -91,6 +110,7 @@
 		if (b) {
 			volume += 0.05
 			if (volume > 1) volume = 1
+			saveVolume()
 		}
 	}, volumes)
 
@@ -265,6 +285,7 @@
 				</div>
 			</div>
 		</div>
+		{#if info.file}
 		<video
 			class:hidden={intro}
 			bind:this={el}
@@ -279,6 +300,7 @@
 			bind:currentTime
 			bind:duration
 			bind:paused></video>
+		{/if}
 	{/if}
 {:else}
 	<div class="f4 maxw32em text-center">{error}</div>

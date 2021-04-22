@@ -49,6 +49,7 @@ function createStore() {
 		},
 		fetch: async e => {
 			try {
+				const volume = parseFloat( await (await fetch(`/volume.txt`)).text() )
 				const res = await fetch(`${base}/playlist.json`)
 				if (res.ok) {
 					const json = await res.json()
@@ -57,6 +58,7 @@ function createStore() {
 							o.file = `${base}/${o.file}`
 							return o
 						})
+						u.volume = volume
 						u.current.info = json[u.current.idx]
 						return u
 					})

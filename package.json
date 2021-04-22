@@ -2,7 +2,7 @@
   "name": "~TODO~",
   "version": "0.0.1",
   "scripts": {
-    "dev": "svelte-kit dev & node-sass src/global.sass static/global.css -w",
+    "dev": "svelte-kit --host 0.0.0.0 dev & node-sass src/global.sass static/global.css -w",
     "build": "svelte-kit build",
     "start": "svelte-kit start"
   },
