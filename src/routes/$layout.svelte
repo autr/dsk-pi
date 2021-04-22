@@ -65,6 +65,7 @@
 	})
 
 	function hardGoto( url ) {
+		console.log('hard goto', $store.current, url)
 		window.location = url
 	}
 

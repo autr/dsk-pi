@@ -23,11 +23,10 @@
 			console.log('[time] counting down', int )
 			const bit = int == 0 ? '' : '-'
 			const str = bit + toTimestamp( int * -1 ) 
-			window.history.replaceState( {} , 'timestamp', `/${info.slug}/${str}` )
+			if (info.slug) window.history.replaceState( {} , 'timestamp', `/${info.slug}/${str}` )
 		}
 		if (counter > 0 && canplay) {
 			intro = false
-			volume = $store.volume
 			// currentTime = 50
 			el.play()
 			console.log('[time] starting play')
@@ -56,6 +55,7 @@
 		setTimeout( e => {
 			refresh = false
 			inited = true
+			setTimeout( ee => volume = $store.volume, 10 )
 		}, 10)
 	}
 
@@ -189,8 +189,7 @@
 		t = parseInt( Math.round(t) )
 		const str = toTimestamp( t || 0 )
 		if (t != lastTime && t >= 0) {
-			console.log(t, str)
-			window.history.replaceState( {} , 'timestamp', `/${info.slug}/${str}` )
+			if (info.slug) window.history.replaceState( {} , 'timestamp', `/${info.slug}/${str}` )
 			lastTime = t
 		}
 
@@ -243,7 +242,6 @@
 		if (o.id == 'playpause') $playpause = value
 	}
 </script>
-
 {#if !error}
 	{#if !refresh}
 		{#if intro}
@@ -300,7 +298,7 @@
 					max={1} 
 					step={0.05} />
 				<div class="rel t6">
-					{ parseInt( volume * 100 ) }
+					{ parseInt( volume * 100 ) || '' }
 				</div>
 			</div>
 		</div>
