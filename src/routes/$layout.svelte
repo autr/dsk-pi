@@ -57,7 +57,6 @@
 		if (!b) {
 			const i = await store.next()
 			const { params } = $page
-			console.log(params)
 			if (params.slug && params.time) return hardGoto(`/${i.slug}/${$store.intro}`)
 			if (params.slug) return hardGoto(`/${i.slug}`)
 		}

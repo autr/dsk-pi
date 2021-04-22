@@ -3,9 +3,9 @@
   stroke-width: 2px;
   fill: none; }
 
-a.icon:active, a.icon.filled {
+.icon:active, .icon.filled {
   border-color: var(--color) !important; }
-  a.icon:active path, a.icon.filled path {
+  .icon:active path, .icon.filled path {
     stroke: var(--bg); }
 
 #svelte-announcer {

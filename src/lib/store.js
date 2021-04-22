@@ -50,6 +50,8 @@ function createStore() {
 		fetch: async e => {
 			try {
 				const volume = parseFloat( await (await fetch(`/volume.txt`)).text() )
+				const timeout = parseInt( await (await fetch(`/volume.txt`)).text() )
+				const intro = await (await fetch(`/intro.txt`)).text()
 				const res = await fetch(`${base}/playlist.json`)
 				if (res.ok) {
 					const json = await res.json()
@@ -59,6 +61,8 @@ function createStore() {
 							return o
 						})
 						u.volume = volume
+						u.intro = intro
+						u.timeout = timeout
 						u.current.info = json[u.current.idx]
 						return u
 					})

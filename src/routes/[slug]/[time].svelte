@@ -18,17 +18,23 @@
 		const ms = (s - stamp) / 1000
 		stamp = s
 		counter += ms
-		const int = parseInt(counter)
-		if ( int != lastCounter ) console.log('[time] counting down', int )
+		const int = parseInt( Math.round(counter) )
+		if ( int != lastCounter ) {
+			console.log('[time] counting down', int )
+			const bit = int == 0 ? '' : '-'
+			const str = bit + toTimestamp( int * -1 ) 
+			window.history.replaceState( {} , 'timestamp', `/${info.slug}/${str}` )
+		}
 		if (counter > 0 && canplay) {
 			intro = false
 			volume = $store.volume
+			// currentTime = 50
 			el.play()
 			console.log('[time] starting play')
 		} else {
 			req = requestAnimationFrame( frame )
 		}
-		lastCounter = parseInt( counter )
+		lastCounter = int
 	}
 
 	onMount( init )
@@ -82,27 +88,27 @@
 
 	let lastVol
 
-	async function saveVolume() {
-		if (volume != lastVol) {
+	async function saveVolume( vol ) {
+		if (vol != lastVol && inited) {
 
-			const response = await fetch( '/volume.txt', {
+			const response = await fetch( '/set.txt', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: {volume} && JSON.stringify( { volume } )
+				body: JSON.stringify( { volume } )
 			})
 
-			console.log('????', await response.json())
-			lastVol = volume
+			lastVol = vol
 		}
 	}
+
+	$: saveVolume( volume )
 
 	add( 'voldown', voldown, ['-', '_'], async b => {
 		if (b) {
 			volume -= 0.05
 			if (volume < 0) volume = 0
-			saveVolume()
 		}
 	}, volumes)
 
@@ -110,7 +116,6 @@
 		if (b) {
 			volume += 0.05
 			if (volume > 1) volume = 1
-			saveVolume()
 		}
 	}, volumes)
 
@@ -181,10 +186,11 @@
 
 	function onCurrentTime( t ) {
 
-		t = parseInt( t )
+		t = parseInt( Math.round(t) )
 		const str = toTimestamp( t || 0 )
-		if (t != lastTime) {
-			// window.history.replaceState( {} , 'timestamp', `/${info.slug}/${str}` )
+		if (t != lastTime && t >= 0) {
+			console.log(t, str)
+			window.history.replaceState( {} , 'timestamp', `/${info.slug}/${str}` )
 			lastTime = t
 		}
 
@@ -193,7 +199,6 @@
 	$: onCurrentTime( currentTime )
 
 	function onLoadStart( e ) {
-		volume = $store.volume
 	}
 
 	function onCanPlay( e ) {
@@ -207,6 +212,12 @@
 		if (ref == skipprev) return $skipprev
 		if (ref == playpause) return $playpause
 		return 'blag'
+	}
+
+	async function onEnded() {
+
+		const i = await store.next()
+		window.location = `/${i.slug}/${$store.intro}`
 	}
 
 	function getSVG( o, p ) {
@@ -224,6 +235,12 @@
 	function onError( e, m ) {
 		error = `error getting ${e.target.src}`
 		console.error( error )
+	}
+
+	function trigger( o, value ) {
+		if (o.id == 'skipprev') $skipprev = value
+		if (o.id == 'skipnext') $skipnext = value
+		if (o.id == 'playpause') $playpause = value
 	}
 </script>
 
@@ -250,15 +267,17 @@
 			class="fixed w100vw b0 z-index98 pb1 flex row-center-center" >
 			<div class="flex row-center-center" class:hidden={ !showPlayback }>
 				{#each playback as o}
-					<a 
+					<div 
+						on:mousedown={ e => trigger( o, true ) }
+						on:mouseup={ e => trigger( o, false ) }
 						class:filled={ states[ o.id ] }
-						class="icon p1 b2-solid w4em h4em relative flex">
+						class="pointer icon p1 b2-solid w4em h4em relative flex">
 						<svg class="icon w100pc h100pc clickable" viewBox="0 0 180 120">
 							<g transform="translate(10,0)">
 								{@html getSVG( o, paused ) }
 							</g>
 						</svg>
-					</a>
+					</div>
 				{/each}
 			</div>
 		</div>
@@ -296,6 +315,7 @@
 			on:canplay={ onCanPlay }
 			on:error={ onError }
 			on:loadstart={onLoadStart}
+			on:ended={onEnded}
 			bind:volume
 			bind:currentTime
 			bind:duration
