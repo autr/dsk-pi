@@ -4,13 +4,33 @@ import RPiGPIOButtons from 'rpi-gpio-buttons'
 
 let _wss = null
 
-const alt = [26,24,21,19,23,32]
-const pins = [7,8,9,10,11,12]
+const num = [26,24,21,19,23,32]
+const ids = [7,8,9,10,11,12]
 
-let buttons = new RPiGPIOButtons( { pins } )
+const pins = ids
 
-buttons.on('pressed', pin => inform( pin, 'something', true ) )
-buttons.on('released', pin => inform( pin, 'something', false ) )
+console.log( `using pins ${pins.join(',')}`)
+
+const lookup = {
+	12: 'volup',
+	9: 'voldown',
+	8: 'toggle',
+	11: 'skipnext',
+	10: 'playpause',
+	7: 'skipprev'
+}
+
+let buttons = new RPiGPIOButtons( { 
+	pins,
+	usePullUp: false,
+	debounce: 10,
+	pressed: 10,
+	clicked: 10
+} )
+
+buttons.on('pressed', pin => inform( pin, lookup[pin], true ) )
+buttons.on('released', pin => inform( pin, lookup[pin], false ) )
+buttons.init().catch(err => console.error('error initialising buttons:', err.message) )
 
 const wss = async () => {
 
@@ -34,11 +54,13 @@ const wss = async () => {
 
 }
 const inform = async ( pid, type, message, extra ) => {
-
-	if (!_wss) await wss()
+	console.log('inform')
 
 	const msg = typeof( message ) == 'object' || typeof( message ) == 'array' ? JSON.stringify( message ) : message
 	console.log(`[inform] ${type}  🌐  ${pid}: "${msg}"`, extra || '')
+
+	if (!_wss) await wss()
+
 	_wss.clients.forEach(function each(client) {
 	  if (client.readyState === WebSocket.OPEN) {
 	    client.send( JSON.stringify( { pid, type, msg } ) )

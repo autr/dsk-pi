@@ -71,7 +71,7 @@
 
 	// bind subscribe and unsubscribe
 
-	for (let i = 0; i < lookup.length; i++) {
+	for (let i = 0 i < lookup.length i++) {
 		const { ref, subscribe } = lookup[i]
 		lookup[i].unsubscribe = ref.subscribe( b => {
 			if (!inited) return
@@ -80,13 +80,13 @@
 	}
 
 	onDestroy( async e => {
-		for (let i = 0; i < lookup.length; i++) lookup[i].unsubscribe()
+		for (let i = 0 i < lookup.length i++) lookup[i].unsubscribe()
 	})
 
 	// keyup and keydown
 
 	function trigger( e, value ) {
-		for (let i = 0; i < lookup.length; i++) {
+		for (let i = 0 i < lookup.length i++) {
 			const { ref, keys } = lookup[i]
 			if ( keys.indexOf(e.key) != -1 ) {
 				ref.update( u => {
@@ -107,7 +107,7 @@
 		if (!ws) {
 			wsConnect()
 		} else if (ws.readyState == ws.CLOSED) {
-			console.log('[overview.svelte] 👁 🛑  remove CLOSED websocket...');
+			console.log('[overview.svelte] 👁 🛑  remove CLOSED websocket...')
 			ws = null
 			window.websocketsClient = null
 		}
@@ -117,35 +117,45 @@
 		if (browser && !ws) {
 			const url = `ws://${window.location.hostname}:8765`
 			console.log('[overview.svelte] 👁 ⚡️  opening websocket...', url)
-			ws = new WebSocket(url);
+			ws = new WebSocket(url)
 			ws.addEventListener('open', onOpen)
 			ws.addEventListener('message', onMessage)
 			ws.addEventListener('error', onError)
 			ws.addEventListener('close', onClose)
-			window.websocketsClient = ws;
+			window.websocketsClient = ws
 		}
 	}
 	function onOpen(e) {
-		console.log('[overview.svelte] 👁 ✅  opened websocket...', e.currentTarget.url);
+		console.log('[overview.svelte] 👁 ✅  opened websocket...', e.currentTarget.url)
 	}
 	function onError(err) {
-		console.log('[overview.svelte] 👁 ❌  error with websocket...', err);
+		console.log('[overview.svelte] 👁 ❌  error with websocket...', err)
 		ws.close()
 	}
 	function onClose(err) {
-		console.log('[overview.svelte] 👁 🛑  closed and delete websockets...');
+		console.log('[overview.svelte] 👁 🛑  closed and delete websockets...')
 	}
 	function onMessage(e) {
-		console.log('[overview.svelte] 👁 ✨  received websocket message...', e.data);
+		console.log('[overview.svelte] 👁 ✨  received websocket message...', e.data)
+		{ pid, type, msg } = e?.data || {}
+
+		console.log(`setting PIN ${type} with value: ${msg}`)
+
+		if ( type == 'volup' ) $volup = msg
+		if ( type == 'voldown' ) $voldown = msg
+		if ( type == 'toggle' ) $toggle = msg
+		if ( type == 'skipprev' ) $skipprev = msg
+		if ( type == 'playpause' ) $playpause = msg
+		if ( type == 'skipnext' ) $skipnext = msg
 	}
 	// ---------------------
 	onDestroy( async() => {
 		if (browser && ws) {
 			console.log('[overview.svelte] 👁 🛑  closing websocket...')
 			ws.close()
-			window.websocketsClient = null;
+			window.websocketsClient = null
 		}
-	});
+	})
 
 
 </script>

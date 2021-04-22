@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "svelte-kit --host 0.0.0.0 dev & node-sass src/global.sass static/global.css -w & nodemon static/buttons.js",
     "build": "svelte-kit build",
-    "start": "svelte-kit start & node static/buttons.js"
+    "start": "svelte-kit --host 0.0.0.0 start & node static/buttons.js"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "next",
