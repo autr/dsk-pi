@@ -4,17 +4,26 @@
         y="0" 
         width="720" 
         height="576" 
+        stroke="red"
+        stroke-width="10"
         fill="black"/>
     <text 
-        x="360" 
-        y="288"
+        x="50%" 
+        y="50%"
         width="720"
         height="576" 
+        font-family="sans-serif"
+        font-size="32"
         dominant-baseline="middle" 
         text-anchor="middle"
         font-style="normal"
         fill="white">
-HELLO WORLD
-New LINE
+            <tspan text-anchor="middle" x="50%" dy="0em">HELLO WORLD</tspan>
+            <tspan text-anchor="middle" x="50%" dy="2em">New LINE</tspan>
+            <tspan text-anchor="middle" x="50%" dy="2em">Another</tspan>
+            <tspan text-anchor="middle" x="50%" dy="2em">Another</tspan>
+            <tspan text-anchor="middle" x="50%" dy="2em">Another</tspan>
+            <tspan text-anchor="middle" x="50%" dy="2em">Another</tspan>
+            <tspan text-anchor="middle" x="50%" dy="2em">Another</tspan>
     </text>
 </svg>

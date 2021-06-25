@@ -1,78 +1,74 @@
 [
 	{
-		"title": "Test 001",
+		"title": "Terraform I",
 		"slug": "i",
 		"file": "001.mov",
 		"description": "001. Live excerpt (partial recording) from Autr + Spettra performance at Haus der Elektronischen Künste Basel 23/10/2017.",
 		"format": "720 x 576 / 4:3 / mov",
 		"length": "01:31",
-		"date": "October 2017",
+		"date": "2017",
 		"credits": [
 			{
-				"role": "Video performance",
+				"role": "Video",
 				"name": "Gilbert Sinnott"
 			},
 			{
-				"role": "Sound performance",
-				"name": "Bjorn Magnusson & Lisa Lurati"
+				"role": "Sound",
+				"name": "Bjorn Magnusson"
+			},
+			{
+				"role": "Sound",
+				"name": "Lisa Lurati"
 			}
 		]
 	},
 	{
-		"title": "Test 002",
+		"title": "SOL",
 		"slug": "ii",
 		"file": "002.mov",
 		"description": "002. Live excerpt (partial recording) from Autr + Spettra performance at Haus der Elektronischen Künste Basel 23/10/2017.",
 		"format": "720 x 576 / 4:3 / mov",
 		"length": "00:56",
-		"date": "October 2017",
+		"date": "2017",
 		"credits": [
 			{
-				"role": "Video performance",
+				"role": "Video",
 				"name": "Gilbert Sinnott"
 			},
 			{
-				"role": "Sound performance",
-				"name": "Bjorn Magnusson & Lisa Lurati"
+				"role": "Sound",
+				"name": "Claudine Chen"
 			}
 		]
 	},
 	{
-		"title": "Test 003",
+		"title": "Terraform II (excerpt)",
 		"slug": "iii",
 		"file": "003.mov",
 		"description": "003. Live excerpt (partial recording) from Autr + Spettra performance at Haus der Elektronischen Künste Basel 23/10/2017.",
 		"format": "720 x 576 / 4:3 / mov",
 		"length": "02:22",
-		"date": "October 2017",
+		"date": "2017",
 		"credits": [
 			{
-				"role": "Video performance",
+				"role": "Video",
 				"name": "Gilbert Sinnott"
 			},
 			{
-				"role": "Sound performance",
-				"name": "Bjorn Magnusson & Lisa Lurati"
+				"role": "Sound",
+				"name": "Bjorn Magnusson"
 			}
 		]
 	},
 	{
-		"title": "Test 004",
+		"title": "Terraform",
 		"slug": "iv",
 		"file": "004.mov",
 		"description": "004. Live excerpt (partial recording) from Autr + Spettra performance at Haus der Elektronischen Künste Basel 23/10/2017.",
 		"format": "720 x 576 / 4:3 / mov",
 		"length": "00:24",
-		"date": "October 2017",
+		"date": "2017",
 		"credits": [
-			{
-				"role": "Video performance",
-				"name": "Gilbert Sinnott"
-			},
-			{
-				"role": "Sound performance",
-				"name": "Bjorn Magnusson & Lisa Lurati"
-			}
 		]
 	}
 
