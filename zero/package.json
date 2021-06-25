@@ -1,0 +1,15 @@
+{
+  "name": "zero",
+  "version": "1.0.0",
+  "description": "Commandline version for Raspberry Pi Zero",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --no-stdin index.js"
+  },
+  "author": "Gilbert Sinnott <g@sinnott.cc>",
+  "license": "MIT",
+  "dependencies": {
+    "keypress": "^0.2.1"
+  }
+}
