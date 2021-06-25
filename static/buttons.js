@@ -28,8 +28,8 @@ let buttons = new RPiGPIOButtons( {
 	clicked: 10
 } )
 
-buttons.on('pressed', pin => inform( pin, lookup[pin], true ) )
-buttons.on('released', pin => inform( pin, lookup[pin], false ) )
+buttons.on('pressed', pin => inform( pin, lookup[pin], false ) )
+buttons.on('released', pin => inform( pin, lookup[pin], true ) )
 buttons.init().catch(err => console.error('error initialising buttons:', err.message) )
 
 const wss = async () => {

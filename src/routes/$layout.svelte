@@ -66,12 +66,12 @@
 
 	function hardGoto( url ) {
 		console.log('hard goto', $store.current, url)
-		window.location = url
+		if (browser) window.location = url
 	}
 
 	// bind subscribe and unsubscribe
 
-	for (let i = 0 i < lookup.length i++) {
+	for (let i = 0; i < lookup.length; i++) {
 		const { ref, subscribe } = lookup[i]
 		lookup[i].unsubscribe = ref.subscribe( b => {
 			if (!inited) return
@@ -79,14 +79,10 @@
 		})
 	}
 
-	onDestroy( async e => {
-		for (let i = 0 i < lookup.length i++) lookup[i].unsubscribe()
-	})
-
 	// keyup and keydown
 
 	function trigger( e, value ) {
-		for (let i = 0 i < lookup.length i++) {
+		for (let i = 0; i < lookup.length; i++) {
 			const { ref, keys } = lookup[i]
 			if ( keys.indexOf(e.key) != -1 ) {
 				ref.update( u => {
@@ -136,8 +132,10 @@
 		console.log('[overview.svelte] 👁 🛑  closed and delete websockets...')
 	}
 	function onMessage(e) {
-		console.log('[overview.svelte] 👁 ✨  received websocket message...', e.data)
-		{ pid, type, msg } = e?.data || {}
+		const j = JSON.parse( e.data )
+		console.log('[overview.svelte] 👁 ✨  received websocket message...', j)
+		const type = j?.type
+		const msg = j?.msg
 
 		console.log(`setting PIN ${type} with value: ${msg}`)
 
@@ -149,13 +147,16 @@
 		if ( type == 'skipnext' ) $skipnext = msg
 	}
 	// ---------------------
-	onDestroy( async() => {
-		if (browser && ws) {
-			console.log('[overview.svelte] 👁 🛑  closing websocket...')
-			ws.close()
-			window.websocketsClient = null
-		}
-	})
+	// onDestroy( async() => {
+
+	// 	for (let i = 0; i < lookup.length; i++) lookup[i].unsubscribe()
+
+	// 	if (browser && ws) {
+	// 		console.log('[overview.svelte] 👁 🛑  closing websocket...')
+	// 		ws.close()
+	// 		window.websocketsClient = null
+	// 	}
+	// })
 
 
 </script>
