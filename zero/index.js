@@ -31,6 +31,33 @@ const BTNS = {
 console.log( `[o-dsk] pins ${Object.keys(BTNS).join(',')}`)
 
 
+let HOLDING = 0
+
+const save = async e => {
+
+    let { str, found, a, b } = await config()
+    let neu = `
+${STR.BEGIN}
+${STR.MODE}${MODE}
+# ${MODES[MODE].credits[0].name} ${MODES[MODE].credits[0].role}
+${MODES[MODE].code}
+${STR.END}
+    `
+    if (!found) {
+        str += neu 
+    } else {
+        let chunk = str.substring(a, b)
+        str = str.replace(chunk, neu)
+    }
+
+    await fs.writeFileSync( '/boot/config.txt', str )
+    console.log(`[o-dsk] wrote mode ${MODE} to boot config\n`, neu)
+    await show('info', 0)
+    setTimeout( async e => {
+        await execSync(`sudo reboot now`) 
+    }, GAP)
+}
+
 const gpio = async e => {
 
     let buttons = new RPiGPIOButtons( { 
@@ -47,11 +74,27 @@ const gpio = async e => {
         let PIN = BTNS[pin] 
         console.log('[o-dsk] released', PIN)
 
-        
+
         if ( PIN == OMNI ) {
-            MODE_TOGGLE = !MODE_TOGGLE
-            await modish( 0 )
+            let neu = new Date()
+            console.log( neu - HOLDING )
+
+            if (neu - HOLDING > 4500) {
+                console.log('[o-disk] resetting to auto (pressed and held)')
+                MODE = 0
+                await save()
+            } else {
+                MODE_TOGGLE = !MODE_TOGGLE
+                await modish( 0 )
+            }
+
         }
+
+        
+    })
+    buttons.on('released', async pin => {
+        let PIN = BTNS[pin]
+        console.log('[o-dsk] pressed', PIN)
 
         if ( PIN == SKIPPREV ) {
             if (!MODE_TOGGLE) await skip(-1)
@@ -73,46 +116,20 @@ const gpio = async e => {
 
         if ( PIN == PLAYPAUSE ) {
             if (!MODE_TOGGLE) await toggle()
-            if (MODE_TOGGLE) {
-                let { str, found, a, b } = await config()
-                let neu = `
-${STR.BEGIN}
-${STR.MODE}${MODE}
-# ${MODES[MODE].credits[0].name} ${MODES[MODE].credits[0].role}
-${MODES[MODE].code}
-${STR.END}
-                `
-                if (!found) {
-                    str += neu 
-                } else {
-                    let chunk = str.substring(a, b)
-                    console.log('CHUNK', chunk, 'CHUCNK')
-                    str = str.replace(chunk, neu)
-                }
-
-                await fs.writeFileSync( '/boot/config.txt', str )
-                console.log(`[o-dsk] wrote mode ${MODE} to boot config\n`, neu)
-                await show('info', 0)
-                setTimeout( async e => {
-                    await execSync(`sudo reboot now`) 
-                }, GAP)
- 
-            }
+            if (MODE_TOGGLE) await save()
         }
-        
+
+        if ( PIN == OMNI ) {
+            HOLDING = new Date()
+        }
+
     })
+
     buttons.on('clicked', async pin => {
         let PIN = BTNS[pin] 
         console.log('[o-dsk] clicked', PIN)
         
     })
-    buttons.on('released', async pin => {
-        let PIN = BTNS[pin]
-        console.log('[o-dsk] pressed', PIN)
-
-
-    })
-
 
     
     buttons.init().catch(err => {
@@ -167,7 +184,6 @@ let FORCE = ARGS.f
 let ERRORS = false
 let IDX = 0
 let PROC = null
-let SHOW = null
 let VOL = 0.5
 let LIST = [] 
 let GAP = 1000
@@ -225,10 +241,7 @@ const toggle = async e => {
 
 const show = async (type, idx) => {
 
-    if (SHOW) {
-        await KILL.fbi()
-        SHOW = null
-    }
+    await KILL.fbi()
     await execSync( `sudo fbi -d /dev/fb0 -T 1 --nocomments --noverbose --cachemem 1 ${path.resolve(DIRS.BIN, `${type}-${idx}.png`)}`)
 }
 
