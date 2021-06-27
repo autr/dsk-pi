@@ -1,35 +1,146 @@
-import fs from 'fs'
-import path from 'path'
-import { spawn, execSync }  from 'child_process'
-import keypress from 'keypress'
-import template from './template.svg.js'
+const fs = require('fs')
+const path = require('path')
+const { spawn, execSync }  = require('child_process')
+const keypress = require('keypress')
+const template = require('./template.svg.js')
+const MODES = require('./modes.js')
+const minimist = require('minimist')
+const os = require('os')
 
-keypress(process.stdin)
+console.log('[zero] current user', os.userInfo().username, process.env.USER)
 
-process.stdin.on('keypress', async (ch, key) => {
+const RPiGPIOButtons = require('rpi-gpio-buttons')
 
-    console.log('[zero] keypress', key.name)
+let ARGS = minimist( process.argv.slice(2) ) 
+const VOLUP = 'VOLUP'
+const VOLDOWN = 'VOLDOWN'
+const OMNI = 'OMNI'
+const SKIPNEXT = 'SKIPNEXT'
+const SKIPPREV = 'SKIPPREV'
+const PLAYPAUSE = 'PLAYPAUSE'
 
-    if ( key.name == 'escape' ) {
-        await KILL.player()
-        await KILL.fbi()
-        await KILL.node()
+const BTNS = {
+    12: VOLUP,
+    9: VOLDOWN,
+    8: OMNI,
+    11: SKIPNEXT,
+    10: PLAYPAUSE,
+    7: SKIPPREV
+}
+
+console.log( `[zero] pins ${Object.keys(BTNS).join(',')}`)
+
+let buttons = new RPiGPIOButtons( { 
+    pins: Object.keys(BTNS),
+    mode: RPiGPIOButtons.MODE_BCM,
+    usePullUp: false,
+    debounce: 10,
+    pressed: 10,
+    clicked: 10
+} )
+
+buttons.on('pressed', async pin => {
+    let PIN = BTNS[pin] 
+    console.log('[zero] released', PIN)
+    
+})
+buttons.on('clicked', async pin => {
+    let PIN = BTNS[pin] 
+    console.log('[zero] clicked', PIN)
+    
+})
+buttons.on('released', async pin => {
+    let PIN = BTNS[pin]
+    console.log('[zero] pressed', PIN)
+
+    if ( PIN == OMNI ) {
+        MODE_TOGGLE = !MODE_TOGGLE
+        await modish( 0 )
     }
 
-    if ( key.name == 'left' ) await skip(-1)
-    if ( key.name == 'right' ) await skip(1)
+    if ( PIN == SKIPPREV ) {
+        if (!MODE_TOGGLE) await skip(-1)
+        if (MODE_TOGGLE) await modish(-1)
+    }
+    if ( PIN == SKIPNEXT ) {
+        if (!MODE_TOGGLE) await skip(1)
+        if (MODE_TOGGLE) await modish(1)
+    }
 
-    if ( key.name == 'down' && PROC ) await PROC.stdin.write('-')
-    if ( key.name == 'up' && PROC ) await PROC.stdin.write('+')
+    if ( PIN == VOLDOWN && PROC ) {
+        if (!MODE_TOGGLE) await PROC.stdin.write('-')
+        if (MODE_TOGGLE) await modish(-1)
+    }
+    if ( PIN == VOLUP && PROC ) {
+        if (!MODE_TOGGLE) await PROC.stdin.write('+')
+        if (MODE_TOGGLE) await modish(1)
+    }
 
-    if ( key.name == 'space' ) toggle()
-    if ( key && key.ctrl && key.name == 'c' ) process.stdin.pause()
-});
- 
-process.stdin.setRawMode(true);
-process.stdin.resume();
+    if ( PIN == PLAYPAUSE ) {
+        if (!MODE_TOGGLE) await toggle()
+        if (MODE_TOGGLE) {
+            const C = await config()
+
+            if (!C.found) {
+                C += `
+${STR.BEGIN}
+${STR.MODE}
+${MODES[MODE].code}
+${STR.END}
+                `
+                console.log(C)
+            }
+
+        }
+    }
+
+})
+
+// const exits = [`exit`, `SIGINT`, `SIGUSR1`, `SIGUSR2`, `uncaughtException`, `SIGTERM`]
+
+// exits.forEach((eventType) => {
+//     process.on(eventType, e => {
+//         console.log('YOYOYOYO EXIT', eventType) 
+//         return process.exit(0)
+//     }) 
+// })
+
+buttons.init().catch(err => console.error('[zero] error initialising buttons:', err.message) )
+
+let KEYBOARD = false
+
+if (KEYBOARD) {
+
+    keypress(process.stdin)
+
+    process.stdin.on('keypress', async (ch, key) => {
+
+        console.log('[zero] keypress', key.name)
+
+        if ( key.name == 'escape' ) {
+            await KILL.player()
+            await KILL.fbi()
+            await KILL.node()
+        }
+
+        if ( key.name == 'left' ) await skip(-1)
+        if ( key.name == 'right' ) await skip(1)
+
+        if ( key.name == 'down' && PROC ) await PROC.stdin.write('-')
+        if ( key.name == 'up' && PROC ) await PROC.stdin.write('+')
+
+        if ( key.name == 'space' ) toggle()
+        if ( key && key.ctrl && key.name == 'c' ) process.stdin.pause()
+    });
+     
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+
+
+}
 
 let DEBUG = false
+let FORCE = ARGS.f
 let ERRORS = false
 let IDX = 0
 let PROC = null
@@ -38,18 +149,24 @@ let VOL = 0.5
 let LIST = [] 
 let GAP = 1000
 let TIMEOUT = null
+let MODE = 0
 
-let args = {
+
+let CMDS = {
     player: e => process.platform == 'darwin' ? 'mplayer' : 'omxplayer',
     volume: e => process.platform == 'darwin' ? `--volume ${VOL}` : `--vol ${VOL}`,
     aspect: e => `--aspect-mode stretch`
 }
-
-const DIR = path.dirname(import.meta.url.replaceAll('file://', ''))
-const STATIC = path.resolve( DIR, '../static' )
-const BASE = path.resolve( STATIC, './samples/Terraforms.DSK.I' )
-const BIN = path.resolve( DIR, './bin' )
-const player = e => process.platform == 'darwin' ? 'mplayer' : 'omxplayer'
+if ( !ARGS._[0] ) return console.error('[zero] exiting - no folder specified')
+let ROOT = path.resolve( ARGS._[0] )
+let BIN = path.resolve( ROOT, './bin' )
+const DIRS = {
+    ROOT,
+    BIN,
+    VOL: path.resolve( BIN, './volume.txt'),
+    PLAYLIST: path.resolve( ROOT, './playlist.json'),
+    TIMEOUT: path.resolve( BIN, './timeout.txt')
+}
 
 const KILL = {
     fbi: async e => {
@@ -64,7 +181,7 @@ const KILL = {
     },
     player: async e => {
         try { 
-            await execSync( `pkill ${args.player()}`) 
+            await execSync( `pkill ${CMDS.player()}`) 
         } catch(err) {}
     }
 }
@@ -83,13 +200,27 @@ const toggle = async e => {
 }
 
 
-const show = async e => {
+const show = async (type, idx) => {
 
     if (SHOW) {
         await KILL.fbi()
         SHOW = null
     }
-    await execSync( `sudo fbi -d /dev/fb0 -T 1 --nocomments --noverbose --cachemem 1 ${path.resolve(BIN, `${IDX}.png`)}`)
+    await execSync( `sudo fbi -d /dev/fb0 -T 1 --nocomments --noverbose --cachemem 1 ${path.resolve(DIRS.BIN, `${type}-${idx}.png`)}`)
+}
+
+let MODE_TOGGLE = false
+
+const modish = async num => {
+    MODE += num
+    if (MODE < 0) MODE = MODES.length - 1
+    if (MODE >= MODES.length) MODE = 0
+    if (MODE_TOGGLE) {
+        await show('mode', MODE)
+        await KILL.player()
+    } else {
+        await start()
+    }
 }
 
 const start = async e => {
@@ -99,7 +230,7 @@ const start = async e => {
         TIMEOUT = null
     }
 
-    await show()
+    await show('video', IDX)
 
     await KILL.player()
     PROC = null
@@ -107,41 +238,65 @@ const start = async e => {
     TIMEOUT = setTimeout( ee => {
 
         const entry = LIST[IDX]
-        const url = path.resolve(BASE, entry.file )
+        const url = path.resolve(DIRS.ROOT, entry.file )
 
         console.log(`[zero] playing ${entry.title} -> ${ path.basename(url) }`)
-        PROC = spawn( args.player(), [ url] )
+        PROC = spawn( CMDS.player(), [ url] )
         PROC.stdin.setEncoding = 'utf-8'
         PROC.stdout.on('data', data => {
-            if (DEBUG) console.log(`[${args.player()}]`, data.toString())
+            if (DEBUG) console.log(`[${CMDS.player()}]`, data.toString())
         })
         
         PROC.stderr.on('data', data => {
-            if (ERRORS) console.error(`[${args.player()}]`, data.toString())
+            console.error(`[${CMDS.player()}]`, data.toString())
         })
         PROC.on('exit', async (code, id) => {
-            console.log(`[${args.player()}] exited with code ${code}`, id )
+            console.log(`[${CMDS.player()}] exited with code ${code}`, id )
             PROC = null
             if (code == 0) {
-                console.log(`[${args.player()}] skipping next from code ${code}`)
+                console.log(`[${CMDS.player()}] skipping next from code ${code}`)
                 await skip(1)
             }
-        })
+        }) 
 
     }, GAP)
 
 }
 
-const create = async e => {
-    for (let i = 0; i < LIST.length; i++ ) {
-        const o = LIST[i]
-        const svg = path.resolve(BIN, `${i}.svg` )
-        const png = path.resolve(BIN, `${i}.png` )
-        const cmd = `rsvg-convert ${svg} > ${png}` 
-        await fs.writeFileSync( svg, template(o) ) 
-        console.log(svg, png, cmd)
-        await execSync( cmd )
+const create = async (type, list) => {
+    let count = 0
+    for (let i = 0; i < list.length; i++ ) {
+        const o = list[i]
+        const svg = path.resolve(DIRS.BIN, `${type}-${i}.svg` )
+        const png = path.resolve(DIRS.BIN, `${type}-${i}.png` )
+
+        if (!(await fs.existsSync( png )) || FORCE ) {
+            const cmd = `MAGICK_FONT_PATH=/usr/share/fonts/truetype/custom rsvg-convert ${svg} > ${png}` 
+            await fs.writeFileSync( svg, template(o) ) 
+            await execSync( cmd )
+            count += 1
+        }
+
     }
+
+    if (count > 0) console.log(`[zero] generated ${count} ${type} overlays`)
+}
+
+let STR = {
+    BEGIN: '# <DSK>',
+    END: '# <DSK>',
+    MODE: '# MODE='
+}
+
+const config = async e => {
+
+    const str = await (await fs.readFileSync( `/boot/config.txt` )).toString()
+
+    const a = str.indexOf(STR.BEGIN)
+    const b = str.indexOf(STR.END)
+    const found = b < a || a == -1 || b == -1
+
+    return { a, b, found, str }
 }
 
 const run = async e => {
@@ -149,25 +304,67 @@ const run = async e => {
     await KILL.fbi()
     await KILL.player()
 
+    // let PINS = Object.keys(BTNS)
+    // for (let i = 0; i < PINS.length; i++){
+    //     let PIN = PINS[i]
+    //     console.log(`[zero] refreshing pin ${PIN}`)
+    //     try { await execSync(`echo ${PIN} > /sys/class/gpio/unexport`) } catch(err) {}
+    // }
+
+    if ( !(await fs.existsSync( DIRS.BIN )) ) {
+        console.log('[zero] creating bin...')
+        await fs.mkdirSync( DIRS.BIN )
+    }
+
+    // READ VOL
+
     try {
-        VOL = parseFloat( await (await fs.readFileSync( path.resolve( STATIC, 'volume.txt') )).toString() )
+        if ( !(await fs.existsSync( DIRS.VOL )) ) await fs.writeFileSync( DIRS.VOL, VOL + '' )
+        VOL = parseFloat( await (await fs.readFileSync( DIRS.VOL )).toString() )
         console.log(`[zero] volume.txt ${VOL}`)
     } catch(err) {
         return console.error(`[zero] could not load volume.txt ${err.message}`)
-    } 
-    try {
-        GAP = parseInt( await (await fs.readFileSync( path.resolve( STATIC, 'timeout.txt') )).toString() )
-        console.log(`[zero] timeout.txt ${VOL}`)
-    } catch(err) {
-        return console.error(`[zero] could not load timeout.txt ${err.message}`)
-    } 
-    try {
-        LIST = JSON.parse( await (await fs.readFileSync( path.resolve( BASE, 'playlist.json') )).toString() )
-    } catch(err) {
-        return `[zero] could not load playlist.json ${err.message}` 
     }
 
-    await create()
+    // READ TIMEOUT / GAP
+
+    try {
+        if ( !(await fs.existsSync( DIRS.TIMEOUT )) ) await fs.writeFileSync( DIRS.TIMEOUT, GAP + '' )
+        GAP = parseInt( await (await fs.readFileSync( DIRS.TIMEOUT )).toString() )
+        console.log(`[zero] timeout.txt ${VOL}`)
+    } catch(err) {
+        return console.error(`[zero] could not load timeout.txt ${err.message}`) 
+    }
+
+    // READ PLAYLIST 
+
+    try {
+        LIST = JSON.parse( await (await fs.readFileSync( DIRS.PLAYLIST )).toString() )
+    } catch(err) {
+        return console.error(`[zero] could not load playlist.json ${err.message}`)
+    }
+
+    // READ MODE
+
+    try {
+        const { str, a, b, found } = await config()
+
+        if ( found ) {
+            MODE = 0
+            console.log('[zero] no explicit mode set from config (auto)')
+        } else {
+            const c = str.indexOf(STR.MODE)
+            const num = str.split(c)[1].split('\n')[0]
+            console.log('NUMBER IS???', num)
+            MODE = parseInt( num ) || 0
+        }
+
+    } catch(err) {
+        return console.error(`[zero] could not load playlist.json ${err.message}`)
+    }
+
+    await create('video', LIST)
+    await create('mode', MODES)
 
     start()
 }

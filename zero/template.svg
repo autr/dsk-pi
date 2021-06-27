@@ -12,7 +12,7 @@
         y="50%"
         width="720"
         height="576" 
-        font-family="sans-serif"
+        font-family="Helvetica, sans-serif"
         font-size="32"
         dominant-baseline="middle" 
         text-anchor="middle"

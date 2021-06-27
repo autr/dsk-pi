@@ -10,7 +10,7 @@ buttons = [26,24,21,19,23,32,7,8,9,10,11,12]
 
 def button_pressed(channel):
     print("BUTTON PRESSED")
-    print(pin)
+    print(channel)
 def unregister_events():
     for pin in buttons:
         GPIO.remove_event_detect(pin)

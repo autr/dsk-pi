@@ -3,16 +3,20 @@
   "version": "1.0.0",
   "description": "Commandline version for Raspberry Pi Zero",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "dev": "nodemon --no-stdin index.js"
+    "dev": "nodemon index.js /home/dietpi/dsk/static/samples/Terraforms.DSK.I",
+    "start": "node index.js /home/dietpi/dsk/static/samples/Terraforms.DSK.I"
   },
   "author": "Gilbert Sinnott <g@sinnott.cc>",
   "license": "MIT",
   "dependencies": {
-    "keypress": "^0.2.1"
+    "keypress": "^0.2.1",
+    "minimist": "^1.2.5",
+    "node-gyp": "^8.1.0",
+    "rpi-gpio-buttons": "^2.0.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.7"
   }
 }
+

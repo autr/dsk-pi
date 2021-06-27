@@ -1,0 +1,32 @@
+
+    <svg width="720" height="576" viewBox="0 0 720 576">
+        <rect 
+            x="0" 
+            y="0" 
+            width="720" 
+            height="576" 
+            stroke="red"
+            stroke-width="10"
+            fill="black"/>
+        <text 
+            x="50%" 
+            y="50%"
+            width="720"
+            height="576" 
+            font-family="Helvetica, Arial, sans-serif"
+            dominant-baseline="middle" 
+            text-anchor="middle"
+            font-style="normal"
+            fill="white">
+                <tspan 
+                    font-size="57"
+                    text-anchor="middle" 
+                    x="50%"
+                    y="45%"
+                    dy="0em">
+                    Terraform
+                </tspan>
+                <tspan dy="2em"></tspan>
+                
+        </text>
+    </svg>
