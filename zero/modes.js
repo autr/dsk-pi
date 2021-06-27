@@ -14,32 +14,32 @@ module.exports = [
         SDTV, 
         `NTSE`, 
         `interlaced`, 
-        `sdtv=0` ),
+        `sdtv_mode=0` ),
     MODE( 
         SDTV, 
         `NTSE`, 
         `Japanese`, 
-        `sdtv=1` ),
+        `sdtv_mode=1` ),
     MODE( 
         SDTV, 
         `PAL`, 
         `interlaced`, 
-        `sdtv=2` ),
+        `sdtv_mode=2` ),
     MODE( 
         SDTV, 
         `PAL`, 
         `Brazilian`, 
-        `sdtv=3` ),
+        `sdtv_mode=3` ), 
     MODE( 
         SDTV, 
         `NTSE`, 
         `progressive scan`, 
-        `sdtv=16` ),
+        `sdtv_mode=16` ),
     MODE( 
         SDTV, 
         `PAL`, 
         `progressive scan`, 
-        `sdtv=18` ),
+        `sdtv_mode=18` ),
     MODE( 
         HDMI, 
         `Force`, 

@@ -6,10 +6,10 @@ const template = require('./template.svg.js')
 const MODES = require('./modes.js')
 const minimist = require('minimist')
 const os = require('os')
-
-console.log('[zero] current user', os.userInfo().username, process.env.USER)
-
 const RPiGPIOButtons = require('rpi-gpio-buttons')
+
+console.log('[o-dsk] current user', os.userInfo().username, process.env.USER)
+
 
 let ARGS = minimist( process.argv.slice(2) ) 
 const VOLUP = 'VOLUP'
@@ -28,73 +28,97 @@ const BTNS = {
     7: SKIPPREV
 }
 
-console.log( `[zero] pins ${Object.keys(BTNS).join(',')}`)
+console.log( `[o-dsk] pins ${Object.keys(BTNS).join(',')}`)
 
-let buttons = new RPiGPIOButtons( { 
-    pins: Object.keys(BTNS),
-    mode: RPiGPIOButtons.MODE_BCM,
-    usePullUp: false,
-    debounce: 10,
-    pressed: 10,
-    clicked: 10
-} )
 
-buttons.on('pressed', async pin => {
-    let PIN = BTNS[pin] 
-    console.log('[zero] released', PIN)
-    
-})
-buttons.on('clicked', async pin => {
-    let PIN = BTNS[pin] 
-    console.log('[zero] clicked', PIN)
-    
-})
-buttons.on('released', async pin => {
-    let PIN = BTNS[pin]
-    console.log('[zero] pressed', PIN)
+const gpio = async e => {
 
-    if ( PIN == OMNI ) {
-        MODE_TOGGLE = !MODE_TOGGLE
-        await modish( 0 )
-    }
+    let buttons = new RPiGPIOButtons( { 
+        pins: Object.keys(BTNS),
+        mode: RPiGPIOButtons.MODE_BCM,
+        usePullUp: false,
+        debounce: 10,
+        pressed: 10,
+        clicked: 10
+    } )
 
-    if ( PIN == SKIPPREV ) {
-        if (!MODE_TOGGLE) await skip(-1)
-        if (MODE_TOGGLE) await modish(-1)
-    }
-    if ( PIN == SKIPNEXT ) {
-        if (!MODE_TOGGLE) await skip(1)
-        if (MODE_TOGGLE) await modish(1)
-    }
 
-    if ( PIN == VOLDOWN && PROC ) {
-        if (!MODE_TOGGLE) await PROC.stdin.write('-')
-        if (MODE_TOGGLE) await modish(-1)
-    }
-    if ( PIN == VOLUP && PROC ) {
-        if (!MODE_TOGGLE) await PROC.stdin.write('+')
-        if (MODE_TOGGLE) await modish(1)
-    }
+    buttons.on('pressed', async pin => {
+        let PIN = BTNS[pin] 
+        console.log('[o-dsk] released', PIN)
 
-    if ( PIN == PLAYPAUSE ) {
-        if (!MODE_TOGGLE) await toggle()
-        if (MODE_TOGGLE) {
-            const C = await config()
+        
+        if ( PIN == OMNI ) {
+            MODE_TOGGLE = !MODE_TOGGLE
+            await modish( 0 )
+        }
 
-            if (!C.found) {
-                C += `
+        if ( PIN == SKIPPREV ) {
+            if (!MODE_TOGGLE) await skip(-1)
+            if (MODE_TOGGLE) await modish(-1)
+        }
+        if ( PIN == SKIPNEXT ) {
+            if (!MODE_TOGGLE) await skip(1)
+            if (MODE_TOGGLE) await modish(1)
+        }
+
+        if ( PIN == VOLDOWN ) {
+            if (!MODE_TOGGLE && PROC) await PROC.stdin.write('-')
+            if (MODE_TOGGLE) await modish(-1)
+        }
+        if ( PIN == VOLUP ) {
+            if (!MODE_TOGGLE && PROC) await PROC.stdin.write('+')
+            if (MODE_TOGGLE) await modish(1)
+        }
+
+        if ( PIN == PLAYPAUSE ) {
+            if (!MODE_TOGGLE) await toggle()
+            if (MODE_TOGGLE) {
+                let { str, found, a, b } = await config()
+                let neu = `
 ${STR.BEGIN}
-${STR.MODE}
+${STR.MODE}${MODE}
+# ${MODES[MODE].credits[0].name} ${MODES[MODE].credits[0].role}
 ${MODES[MODE].code}
 ${STR.END}
                 `
-                console.log(C)
+                if (!found) {
+                    str += neu 
+                } else {
+                    let chunk = str.substring(a, b)
+                    console.log('CHUNK', chunk, 'CHUCNK')
+                    str = str.replace(chunk, neu)
+                }
+
+                await fs.writeFileSync( '/boot/config.txt', str )
+                console.log(`[o-dsk] wrote mode ${MODE} to boot config\n`, neu)
+                await show('info', 0)
+                setTimeout( async e => {
+                    await execSync(`sudo reboot now`) 
+                }, GAP)
+ 
             }
-
         }
-    }
+        
+    })
+    buttons.on('clicked', async pin => {
+        let PIN = BTNS[pin] 
+        console.log('[o-dsk] clicked', PIN)
+        
+    })
+    buttons.on('released', async pin => {
+        let PIN = BTNS[pin]
+        console.log('[o-dsk] pressed', PIN)
 
-})
+
+    })
+
+
+    
+    buttons.init().catch(err => {
+        console.error('[o-dsk] error initialising buttons:', err.message)
+    })
+}
 
 // const exits = [`exit`, `SIGINT`, `SIGUSR1`, `SIGUSR2`, `uncaughtException`, `SIGTERM`]
 
@@ -105,7 +129,6 @@ ${STR.END}
 //     }) 
 // })
 
-buttons.init().catch(err => console.error('[zero] error initialising buttons:', err.message) )
 
 let KEYBOARD = false
 
@@ -115,7 +138,7 @@ if (KEYBOARD) {
 
     process.stdin.on('keypress', async (ch, key) => {
 
-        console.log('[zero] keypress', key.name)
+        console.log('[o-dsk] keypress', key.name)
 
         if ( key.name == 'escape' ) {
             await KILL.player()
@@ -157,7 +180,7 @@ let CMDS = {
     volume: e => process.platform == 'darwin' ? `--volume ${VOL}` : `--vol ${VOL}`,
     aspect: e => `--aspect-mode stretch`
 }
-if ( !ARGS._[0] ) return console.error('[zero] exiting - no folder specified')
+if ( !ARGS._[0] ) return console.error('[o-dsk] exiting - no folder specified')
 let ROOT = path.resolve( ARGS._[0] )
 let BIN = path.resolve( ROOT, './bin' )
 const DIRS = {
@@ -190,12 +213,12 @@ const skip = async num => {
     IDX += num
     if (IDX < 0) IDX = LIST.length - 1
     if (IDX >= LIST.length) IDX = 0
-    console.log(`[zero] switched IDX ${IDX}` )
+    console.log(`[o-dsk] switched IDX ${IDX}` )
     await start()
 
 }
 const toggle = async e => {
-    console.log('[zero] pause / play')
+    console.log('[o-dsk] pause / play')
     if (PROC) PROC.stdin.write(' ')
 }
 
@@ -240,7 +263,7 @@ const start = async e => {
         const entry = LIST[IDX]
         const url = path.resolve(DIRS.ROOT, entry.file )
 
-        console.log(`[zero] playing ${entry.title} -> ${ path.basename(url) }`)
+        console.log(`[o-dsk] playing ${entry.title} -> ${ path.basename(url) }`)
         PROC = spawn( CMDS.player(), [ url] )
         PROC.stdin.setEncoding = 'utf-8'
         PROC.stdout.on('data', data => {
@@ -272,19 +295,19 @@ const create = async (type, list) => {
 
         if (!(await fs.existsSync( png )) || FORCE ) {
             const cmd = `MAGICK_FONT_PATH=/usr/share/fonts/truetype/custom rsvg-convert ${svg} > ${png}` 
-            await fs.writeFileSync( svg, template(o) ) 
+            await fs.writeFileSync( svg, template(o) )
             await execSync( cmd )
             count += 1
         }
 
     }
 
-    if (count > 0) console.log(`[zero] generated ${count} ${type} overlays`)
+    if (count > 0) console.log(`[o-dsk] generated ${count} ${type} overlays`)
 }
 
 let STR = {
     BEGIN: '# <DSK>',
-    END: '# <DSK>',
+    END: '# </DSK>',
     MODE: '# MODE='
 }
 
@@ -294,7 +317,7 @@ const config = async e => {
 
     const a = str.indexOf(STR.BEGIN)
     const b = str.indexOf(STR.END)
-    const found = b < a || a == -1 || b == -1
+    const found = !(b < a || a == -1 || b == -1)
 
     return { a, b, found, str }
 }
@@ -303,16 +326,17 @@ const run = async e => {
 
     await KILL.fbi()
     await KILL.player()
+    await gpio()
 
     // let PINS = Object.keys(BTNS)
     // for (let i = 0; i < PINS.length; i++){
     //     let PIN = PINS[i]
-    //     console.log(`[zero] refreshing pin ${PIN}`)
+    //     console.log(`[o-dsk] refreshing pin ${PIN}`)
     //     try { await execSync(`echo ${PIN} > /sys/class/gpio/unexport`) } catch(err) {}
     // }
 
     if ( !(await fs.existsSync( DIRS.BIN )) ) {
-        console.log('[zero] creating bin...')
+        console.log('[o-dsk] creating bin...')
         await fs.mkdirSync( DIRS.BIN )
     }
 
@@ -321,9 +345,9 @@ const run = async e => {
     try {
         if ( !(await fs.existsSync( DIRS.VOL )) ) await fs.writeFileSync( DIRS.VOL, VOL + '' )
         VOL = parseFloat( await (await fs.readFileSync( DIRS.VOL )).toString() )
-        console.log(`[zero] volume.txt ${VOL}`)
+        console.log(`[o-dsk] volume.txt ${VOL}`)
     } catch(err) {
-        return console.error(`[zero] could not load volume.txt ${err.message}`)
+        return console.error(`[o-dsk] could not load volume.txt ${err.message}`)
     }
 
     // READ TIMEOUT / GAP
@@ -331,9 +355,9 @@ const run = async e => {
     try {
         if ( !(await fs.existsSync( DIRS.TIMEOUT )) ) await fs.writeFileSync( DIRS.TIMEOUT, GAP + '' )
         GAP = parseInt( await (await fs.readFileSync( DIRS.TIMEOUT )).toString() )
-        console.log(`[zero] timeout.txt ${VOL}`)
+        console.log(`[o-dsk] timeout.txt ${VOL}`)
     } catch(err) {
-        return console.error(`[zero] could not load timeout.txt ${err.message}`) 
+        return console.error(`[o-dsk] could not load timeout.txt ${err.message}`) 
     }
 
     // READ PLAYLIST 
@@ -341,30 +365,45 @@ const run = async e => {
     try {
         LIST = JSON.parse( await (await fs.readFileSync( DIRS.PLAYLIST )).toString() )
     } catch(err) {
-        return console.error(`[zero] could not load playlist.json ${err.message}`)
+        return console.error(`[o-dsk] could not load playlist.json ${err.message}`)
     }
 
     // READ MODE
 
     try {
-        const { str, a, b, found } = await config()
+        const { str, a, b, found } = await config() 
 
-        if ( found ) {
+        if ( !found ) {
             MODE = 0
-            console.log('[zero] no explicit mode set from config (auto)')
+            console.log('[o-dsk] no explicit mode set from config (auto)')
         } else {
             const c = str.indexOf(STR.MODE)
-            const num = str.split(c)[1].split('\n')[0]
-            console.log('NUMBER IS???', num)
-            MODE = parseInt( num ) || 0
+            MODE = parseInt( str.substring(c + STR.MODE.length).split('\n')[0] )
+            console.log(`[o-dsk] mode from boot config ${JSON.stringify(MODES[MODE])}`)
         }
 
     } catch(err) {
-        return console.error(`[zero] could not load playlist.json ${err.message}`)
+        return console.error(`[o-dsk] could not load boot config ${err.message}`)
     }
 
-    await create('video', LIST)
-    await create('mode', MODES)
+    await show( 'mode', MODE )
+
+    setTimeout( async e => {
+        await create('video', LIST) 
+        await create('mode', MODES)
+        await create('info', [
+            {
+                title: 'Restarting',
+                credits: [
+                    {
+                        name: 'Config',
+                        role: 'Update'
+                    }
+                ]
+            }
+        ]) 
+    }, GAP)
+
 
     start()
 }

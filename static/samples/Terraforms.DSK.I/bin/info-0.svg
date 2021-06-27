@@ -22,9 +22,9 @@
                     font-size="57"
                     text-anchor="middle" 
                     x="50%"
-                    y="30%"
+                    y="40%"
                     dy="0em">
-                    Terraform I
+                    Restarting
                 </tspan>
                 <tspan dy="2em"></tspan>
                 
@@ -33,21 +33,7 @@
                         text-anchor="middle" 
                         x="50%"
                         dy="2em">
-                        Gilbert Sinnott - Video
-                    </tspan>
-                    <tspan 
-                        font-size="34"
-                        text-anchor="middle" 
-                        x="50%"
-                        dy="2em">
-                        Bjorn Magnusson - Sound
-                    </tspan>
-                    <tspan 
-                        font-size="34"
-                        text-anchor="middle" 
-                        x="50%"
-                        dy="2em">
-                        Lisa Lurati - Sound
+                        Config - Update
                     </tspan>
         </text>
     </svg>
